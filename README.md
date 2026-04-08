@@ -24,11 +24,14 @@ Fills out and submits the ANA award waitlist booking flow automatically — from
 
 ## Installation
 
-1. Download or clone this repository
+1. Download this repository:
+   - Go to [https://github.com/AwardsLab/ana-award-waitlist-booker](https://github.com/AwardsLab/ana-award-waitlist-booker)
+   - Click the green **Code** button → **Download ZIP**
+   - Unzip the downloaded file
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable **Developer mode** (toggle in top-right)
 4. Click **Load unpacked**
-5. Select the folder containing these files
+5. Select the unzipped folder
 
 The ANA Award Booker icon will appear in your Chrome toolbar.
 
