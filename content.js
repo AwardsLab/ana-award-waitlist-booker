@@ -565,149 +565,156 @@ function runCompletePage() {
 
 })(); // end execution guard IIFE
 
-// ─── Floating Panel ───────────────────────────────────────────────────────────
-// Injected into every ANA page so the user can fill in settings and start
-// the booking without having to open the popup separately.
+// ─── Floating Panel (Shadow DOM — fully isolated from ANA page styles) ────────
 (function() {
-  if (document.getElementById('ana-booker-panel')) return;
+  if (document.getElementById('ana-booker-host')) return;
 
-  // Load the same fonts as the popup
-  var fontLink = document.createElement('link');
-  fontLink.rel = 'stylesheet';
-  fontLink.href = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap';
-  document.head.appendChild(fontLink);
+  // Outer host element — only position/size set here, no style bleed
+  var host = document.createElement('div');
+  host.id = 'ana-booker-host';
+  host.style.cssText = 'position:fixed;bottom:24px;right:24px;width:320px;z-index:2147483647;';
+  document.body.appendChild(host);
 
-  var style = document.createElement('style');
-  style.textContent = [
+  var shadow = host.attachShadow({ mode: 'open' });
+
+  var css = [
+    '@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap");',
+    '*{box-sizing:border-box;margin:0;padding:0;}',
     // Panel shell
-    '#ana-booker-panel{position:fixed;bottom:24px;right:24px;width:320px;background:#0a0a0f;border:1px solid #1e2a4a;border-radius:12px;font-family:"DM Sans",sans-serif;font-size:13px;color:#e8e8f0;z-index:2147483647;box-shadow:0 8px 32px rgba(0,0,0,.7);overflow:hidden}',
-    '#ana-booker-panel *{box-sizing:border-box;margin:0;padding:0}',
-    '#ana-booker-panel.abk-minimized #abk-body{display:none}',
-    // Header — matches .header
-    '#abk-header{background:linear-gradient(135deg,#0d1b3e 0%,#0a0a0f 100%);padding:16px 18px 14px;border-bottom:1px solid #1e2a4a;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}',
-    '#abk-header-left{display:flex;align-items:center;gap:10px}',
-    '#abk-icon{width:32px;height:32px;background:linear-gradient(135deg,#1a6fb5,#0d4a8a);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}',
-    '#abk-title{font-size:14px;font-weight:600;color:#fff;letter-spacing:0.3px}',
-    '#abk-subtitle{font-size:10px;color:#5a6a8a;font-family:"DM Mono",monospace;margin-top:1px}',
-    '#abk-min-btn{background:transparent;border:none;color:#4a5a7a;font-size:20px;line-height:1;cursor:pointer;padding:0 2px;flex-shrink:0}',
-    '#abk-min-btn:hover{color:#e8e8f0}',
-    // Status bar — matches .status-bar
-    '#abk-status-bar{background:#0f1420;padding:8px 18px;border-bottom:1px solid #1a2035;display:flex;align-items:center;gap:8px}',
-    '.abk-dot{width:6px;height:6px;border-radius:50%;background:#2a3550;flex-shrink:0;transition:all .3s}',
-    '.abk-dot.idle{background:#2a3550}',
-    '.abk-dot.running{background:#22c55e;box-shadow:0 0 6px #22c55e;animation:abk-pulse 1.5s infinite}',
-    '.abk-dot.error{background:#ef4444;box-shadow:0 0 6px #ef4444}',
-    '.abk-dot.done{background:#3b82f6;box-shadow:0 0 6px #3b82f6}',
-    '@keyframes abk-pulse{0%,100%{opacity:1}50%{opacity:.4}}',
-    '.abk-st{font-size:11px;font-family:"DM Mono",monospace;color:#4a5a7a}',
-    '.abk-st.running{color:#22c55e}.abk-st.error{color:#ef4444}.abk-st.done{color:#3b82f6}',
-    // Form body — matches .form
-    '#abk-body{padding:14px 18px;display:flex;flex-direction:column;gap:10px}',
-    '.abk-row{display:flex;gap:8px}',
-    '.abk-field{display:flex;flex-direction:column;gap:4px;flex:1}',
-    '.abk-lbl{font-size:10px;font-weight:500;color:#4a5a7a;text-transform:uppercase;letter-spacing:0.8px;font-family:"DM Mono",monospace}',
-    // Inputs — matches input[type="text"], input[type="date"]
-    '.abk-inp{background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:7px 10px;color:#e8e8f0;font-family:"DM Mono",monospace;font-size:12px;outline:none;width:100%;transition:border-color .2s,box-shadow .2s}',
-    '.abk-inp:focus{border-color:#1a6fb5;box-shadow:0 0 0 2px rgba(26,111,181,.15)}',
-    '.abk-inp::placeholder{color:#2a3550}',
-    '.abk-inp[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.3);cursor:pointer}',
-    // Flight selector — matches .flight-selector / .flight-option
-    '.abk-flights{display:flex;gap:6px}',
-    '.abk-fopt{flex:1;background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:7px 8px;cursor:pointer;text-align:center;transition:all .2s}',
-    '.abk-fopt:hover{border-color:#1a6fb5}',
-    '.abk-fopt.selected{border-color:#1a6fb5;background:rgba(26,111,181,.1)}',
-    '.abk-fopt-code{font-family:"DM Mono",monospace;font-size:11px;font-weight:500;color:#e8e8f0}',
-    '.abk-fopt-sub{font-size:9px;color:#4a5a7a;margin-top:2px;font-family:"DM Mono",monospace}',
-    '.abk-fopt.selected .abk-fopt-code{color:#60a5fa}',
-    '.abk-fopt.selected .abk-fopt-sub{color:#3b82f6}',
-    // Divider
-    '.abk-div{height:1px;background:#1a2035;margin:2px 0}',
-    // Checkbox row — matches .checkbox-row
-    '.abk-cbrow{display:flex;align-items:center;gap:10px;background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:8px 10px;cursor:pointer;transition:border-color .2s}',
-    '.abk-cbrow:hover{border-color:#1a6fb5}',
-    '.abk-cbrow input[type="checkbox"]{width:14px;height:14px;accent-color:#1a6fb5;cursor:pointer;flex-shrink:0}',
-    '.abk-cbrow span{font-size:11px;color:#8a9ab8;line-height:1.3}',
-    // Progress pips — matches .step-progress
-    '#abk-progress{padding:0 18px 14px}',
-    '.abk-pip-label{font-size:10px;font-family:"DM Mono",monospace;color:#4a5a7a;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px}',
-    '.abk-pips{display:flex;gap:3px}',
-    '.abk-pip{flex:1;height:3px;background:#1a2035;border-radius:2px;transition:all .3s}',
-    '.abk-pip.done{background:#22c55e}',
-    '.abk-pip.active{background:#1a6fb5;animation:abk-pulse 1.5s infinite}',
-    '.abk-pip.error{background:#ef4444}',
-    // Actions — matches .actions
-    '#abk-actions{padding:0 18px 14px;display:flex;flex-direction:column;gap:6px}',
-    '.abk-btn-start{background:linear-gradient(135deg,#1a6fb5,#0d4a8a);border:none;border-radius:8px;padding:10px;color:#fff;font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.3px;transition:all .2s;width:100%}',
-    '.abk-btn-start:hover{background:linear-gradient(135deg,#2080cc,#1a5aa0);transform:translateY(-1px);box-shadow:0 4px 12px rgba(26,111,181,.3)}',
-    '.abk-btn-start:active{transform:translateY(0)}',
-    '.abk-btn-start:disabled{opacity:.4;cursor:not-allowed;transform:none}',
-    '.abk-btn-reset{background:transparent;border:1px solid #1e2a4a;border-radius:8px;padding:7px;color:#4a5a7a;font-family:"DM Sans",sans-serif;font-size:11px;cursor:pointer;transition:all .2s;width:100%}',
-    '.abk-btn-reset:hover{border-color:#ef4444;color:#ef4444}',
-    // Watermark
-    '.abk-wm{font-size:9px;font-family:"DM Mono",monospace;color:#2a3550;text-align:center;padding-bottom:10px}'
+    '#panel{background:#0a0a0f;border:1px solid #1e2a4a;border-radius:12px;font-family:"DM Sans",sans-serif;font-size:13px;color:#e8e8f0;box-shadow:0 8px 32px rgba(0,0,0,.7);overflow:hidden;}',
+    '#panel.minimized #body,#panel.minimized #progress,#panel.minimized #actions,#panel.minimized .wm{display:none;}',
+    // Header
+    '#header{background:linear-gradient(135deg,#0d1b3e 0%,#0a0a0f 100%);padding:16px 18px 14px;border-bottom:1px solid #1e2a4a;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}',
+    '#header-left{display:flex;align-items:center;gap:10px;}',
+    '#icon{width:32px;height:32px;background:linear-gradient(135deg,#1a6fb5,#0d4a8a);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}',
+    '#title{font-size:14px;font-weight:600;color:#fff;letter-spacing:0.3px;}',
+    '#subtitle{font-size:10px;color:#5a6a8a;font-family:"DM Mono",monospace;margin-top:1px;}',
+    '#min-btn{background:transparent;border:none;color:#4a5a7a;font-size:20px;line-height:1;cursor:pointer;padding:0 2px;flex-shrink:0;}',
+    '#min-btn:hover{color:#e8e8f0;}',
+    // Status bar
+    '#status-bar{background:#0f1420;padding:8px 18px;border-bottom:1px solid #1a2035;display:flex;align-items:center;gap:8px;}',
+    '.dot{width:6px;height:6px;border-radius:50%;background:#2a3550;flex-shrink:0;transition:all .3s;}',
+    '.dot.running{background:#22c55e;box-shadow:0 0 6px #22c55e;animation:pulse 1.5s infinite;}',
+    '.dot.error{background:#ef4444;box-shadow:0 0 6px #ef4444;}',
+    '.dot.done{background:#3b82f6;box-shadow:0 0 6px #3b82f6;}',
+    '@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}',
+    '.st{font-size:11px;font-family:"DM Mono",monospace;color:#4a5a7a;}',
+    '.st.running{color:#22c55e;}.st.error{color:#ef4444;}.st.done{color:#3b82f6;}',
+    // Form
+    '#body{padding:14px 18px;display:flex;flex-direction:column;gap:10px;}',
+    '.row{display:flex;gap:8px;}',
+    '.field{display:flex;flex-direction:column;gap:4px;flex:1;}',
+    'label{font-size:10px;font-weight:500;color:#4a5a7a;text-transform:uppercase;letter-spacing:0.8px;font-family:"DM Mono",monospace;display:block;}',
+    'input[type="text"],input[type="date"]{background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:7px 10px;color:#e8e8f0;font-family:"DM Mono",monospace;font-size:12px;outline:none;width:100%;transition:border-color .2s,box-shadow .2s;}',
+    'input[type="text"]:focus,input[type="date"]:focus{border-color:#1a6fb5;box-shadow:0 0 0 2px rgba(26,111,181,.15);}',
+    'input[type="text"]::placeholder{color:#2a3550;}',
+    'input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.3);cursor:pointer;}',
+    // Flight selector
+    '.flights{display:flex;gap:6px;}',
+    '.fopt{flex:1;background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:7px 8px;cursor:pointer;text-align:center;transition:all .2s;}',
+    '.fopt:hover{border-color:#1a6fb5;}',
+    '.fopt.selected{border-color:#1a6fb5;background:rgba(26,111,181,.1);}',
+    '.fopt-code{font-family:"DM Mono",monospace;font-size:11px;font-weight:500;color:#e8e8f0;}',
+    '.fopt-sub{font-size:9px;color:#4a5a7a;margin-top:2px;font-family:"DM Mono",monospace;}',
+    '.fopt.selected .fopt-code{color:#60a5fa;}',
+    '.fopt.selected .fopt-sub{color:#3b82f6;}',
+    '.divider{height:1px;background:#1a2035;margin:2px 0;}',
+    // Checkbox
+    '.cbrow{display:flex;align-items:center;gap:10px;background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:8px 10px;cursor:pointer;transition:border-color .2s;}',
+    '.cbrow:hover{border-color:#1a6fb5;}',
+    '.cbrow input[type="checkbox"]{width:14px;height:14px;accent-color:#1a6fb5;cursor:pointer;flex-shrink:0;}',
+    '.cbrow span{font-size:11px;color:#8a9ab8;line-height:1.3;}',
+    // Progress
+    '#progress{padding:0 18px 14px;}',
+    '.pip-label{font-size:10px;font-family:"DM Mono",monospace;color:#4a5a7a;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px;}',
+    '.pips{display:flex;gap:3px;}',
+    '.pip{flex:1;height:3px;background:#1a2035;border-radius:2px;transition:all .3s;}',
+    '.pip.done{background:#22c55e;}',
+    '.pip.active{background:#1a6fb5;animation:pulse 1.5s infinite;}',
+    '.pip.error{background:#ef4444;}',
+    // Actions
+    '#actions{padding:0 18px 14px;display:flex;flex-direction:column;gap:6px;}',
+    '.btn-start{background:linear-gradient(135deg,#1a6fb5,#0d4a8a);border:none;border-radius:8px;padding:10px;color:#fff;font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.3px;transition:all .2s;width:100%;}',
+    '.btn-start:hover{background:linear-gradient(135deg,#2080cc,#1a5aa0);transform:translateY(-1px);box-shadow:0 4px 12px rgba(26,111,181,.3);}',
+    '.btn-start:active{transform:translateY(0);}',
+    '.btn-start:disabled{opacity:.4;cursor:not-allowed;transform:none;}',
+    '.btn-reset{background:transparent;border:1px solid #1e2a4a;border-radius:8px;padding:7px;color:#4a5a7a;font-family:"DM Sans",sans-serif;font-size:11px;cursor:pointer;transition:all .2s;width:100%;}',
+    '.btn-reset:hover{border-color:#ef4444;color:#ef4444;}',
+    '.wm{font-size:9px;font-family:"DM Mono",monospace;color:#2a3550;text-align:center;padding-bottom:10px;}'
   ].join('');
-  document.head.appendChild(style);
 
-  var panel = document.createElement('div');
-  panel.id = 'ana-booker-panel';
-  panel.innerHTML =
-    '<div id="abk-header">' +
-      '<div id="abk-header-left">' +
-        '<div id="abk-icon">✈</div>' +
-        '<div><div id="abk-title">ANA Award Booker</div><div id="abk-subtitle">WAITLIST AUTOMATION</div></div>' +
-      '</div>' +
-      '<button id="abk-min-btn">−</button>' +
-    '</div>' +
-    '<div id="abk-status-bar"><div class="abk-dot idle" id="abk-dot"></div><div class="abk-st idle" id="abk-st">Ready to run</div></div>' +
-    '<div id="abk-body">' +
-      '<div class="abk-row">' +
-        '<div class="abk-field"><label class="abk-lbl">From</label><input class="abk-inp" id="abk-origin" placeholder="TYO" maxlength="3"></div>' +
-        '<div class="abk-field"><label class="abk-lbl">To</label><input class="abk-inp" id="abk-dest" placeholder="SFO" maxlength="3"></div>' +
-        '<div class="abk-field"><label class="abk-lbl">Date</label><input class="abk-inp" type="date" id="abk-date"></div>' +
-      '</div>' +
-      '<div class="abk-field"><label class="abk-lbl">Flight Preference</label>' +
-        '<div class="abk-flights">' +
-          '<div class="abk-fopt selected" data-index="0"><div class="abk-fopt-code">1st Flight</div><div class="abk-fopt-sub">First available</div></div>' +
-          '<div class="abk-fopt" data-index="1"><div class="abk-fopt-code">2nd Flight</div><div class="abk-fopt-sub">Second available</div></div>' +
-          '<div class="abk-fopt" data-index="2"><div class="abk-fopt-code">3rd Flight</div><div class="abk-fopt-sub">Third available</div></div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="abk-div"></div>' +
-      '<div class="abk-field"><label class="abk-lbl">Phone Number</label><input class="abk-inp" id="abk-phone" placeholder="Ex. 6501234567"></div>' +
-      '<div class="abk-cbrow" id="abk-cbrow"><input type="checkbox" id="abk-arranger"><span>I am booking for someone else (Travel Arranger)</span></div>' +
-    '</div>' +
-    '<div id="abk-progress">' +
-      '<div class="abk-pip-label">Progress</div>' +
-      '<div class="abk-pips">' +
-        [0,1,2,3,4,5,6,7].map(function(i){ return '<div class="abk-pip" id="abk-pip'+i+'"></div>'; }).join('') +
-      '</div>' +
-    '</div>' +
-    '<div id="abk-actions">' +
-      '<button class="abk-btn-start" id="abk-btn-start">▶ Start Booking</button>' +
-      '<button class="abk-btn-reset" id="abk-btn-reset">✕ Reset</button>' +
-    '</div>' +
-    '<div class="abk-wm">里程研究所 AwardLab</div>';
-  document.body.appendChild(panel);
+  var styleEl = document.createElement('style');
+  styleEl.textContent = css;
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
+  var html = [
+    '<div id="panel">',
+      '<div id="header">',
+        '<div id="header-left">',
+          '<div id="icon">✈</div>',
+          '<div><div id="title">ANA Award Booker</div><div id="subtitle">WAITLIST AUTOMATION</div></div>',
+        '</div>',
+        '<button id="min-btn">−</button>',
+      '</div>',
+      '<div id="status-bar"><div class="dot idle" id="dot"></div><div class="st idle" id="st">Ready to run</div></div>',
+      '<div id="body">',
+        '<div class="row">',
+          '<div class="field"><label>From</label><input type="text" id="origin" placeholder="TYO" maxlength="3"></div>',
+          '<div class="field"><label>To</label><input type="text" id="dest" placeholder="SFO" maxlength="3"></div>',
+          '<div class="field"><label>Date</label><input type="date" id="date"></div>',
+        '</div>',
+        '<div class="field"><label>Flight Preference</label>',
+          '<div class="flights">',
+            '<div class="fopt selected" data-index="0"><div class="fopt-code">1st Flight</div><div class="fopt-sub">First available</div></div>',
+            '<div class="fopt" data-index="1"><div class="fopt-code">2nd Flight</div><div class="fopt-sub">Second available</div></div>',
+            '<div class="fopt" data-index="2"><div class="fopt-code">3rd Flight</div><div class="fopt-sub">Third available</div></div>',
+          '</div>',
+        '</div>',
+        '<div class="divider"></div>',
+        '<div class="field"><label>Phone Number</label><input type="text" id="phone" placeholder="Ex. 6501234567"></div>',
+        '<div class="cbrow" id="cbrow"><input type="checkbox" id="arranger"><span>I am booking for someone else (Travel Arranger)</span></div>',
+      '</div>',
+      '<div id="progress">',
+        '<div class="pip-label">Progress</div>',
+        '<div class="pips">',
+          [0,1,2,3,4,5,6,7].map(function(i){ return '<div class="pip" id="pip'+i+'"></div>'; }).join(''),
+        '</div>',
+      '</div>',
+      '<div id="actions">',
+        '<button class="btn-start" id="btn-start">▶ Start Booking</button>',
+        '<button class="btn-reset" id="btn-reset">✕ Reset</button>',
+      '</div>',
+      '<div class="wm">里程研究所 AwardLab</div>',
+    '</div>'
+  ].join('');
+
+  var wrapper = document.createElement('div');
+  wrapper.innerHTML = html;
+  shadow.appendChild(styleEl);
+  shadow.appendChild(wrapper.firstChild);
+
+  // ── Shorthand querySelector inside shadow ─────────────────────────────────
+  function q(sel) { return shadow.querySelector(sel); }
+  function qa(sel) { return shadow.querySelectorAll(sel); }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
   function getSelectedIndex() {
-    var sel = panel.querySelector('.abk-fopt.selected');
+    var sel = q('.fopt.selected');
     return sel ? parseInt(sel.dataset.index) : 0;
   }
 
   function selectFlight(index) {
-    panel.querySelectorAll('.abk-fopt').forEach(function(el) {
+    qa('.fopt').forEach(function(el) {
       el.classList.toggle('selected', parseInt(el.dataset.index) === index);
     });
   }
 
   function saveSettings() {
     chrome.storage.local.set({ anaSettings: {
-      origin: document.getElementById('abk-origin').value,
-      destination: document.getElementById('abk-dest').value,
-      departureDate: document.getElementById('abk-date').value,
-      phone: document.getElementById('abk-phone').value,
-      travelArranger: document.getElementById('abk-arranger').checked,
+      origin: q('#origin').value,
+      destination: q('#dest').value,
+      departureDate: q('#date').value,
+      phone: q('#phone').value,
+      travelArranger: q('#arranger').checked,
       selectedFlightIndex: getSelectedIndex()
     }});
   }
@@ -719,21 +726,19 @@ function runCompletePage() {
   ];
 
   function updateStatus(status, step) {
-    var dot = document.getElementById('abk-dot');
-    var txt = document.getElementById('abk-st');
-    var btn = document.getElementById('abk-btn-start');
+    var dot = q('#dot'), txt = q('#st'), btn = q('#btn-start');
     if (!dot) return;
-    dot.className = 'abk-dot ' + status;
-    txt.className = 'abk-st ' + status;
+    dot.className = 'dot ' + status;
+    txt.className = 'st ' + status;
     btn.disabled = (status === 'running');
-    if (status === 'idle')         txt.textContent = 'Ready';
+    if (status === 'idle')         txt.textContent = 'Ready to run';
     else if (status === 'running') txt.textContent = stepLabels[step] || 'Running...';
     else if (status === 'done')    txt.textContent = '✓ Waitlist submitted!';
     else if (status === 'error')   txt.textContent = '✕ Error — check console';
     for (var i = 0; i < 8; i++) {
-      var pip = document.getElementById('abk-pip' + i);
+      var pip = q('#pip' + i);
       if (!pip) continue;
-      pip.className = 'abk-pip';
+      pip.className = 'pip';
       if (i < step) pip.classList.add('done');
       else if (i === step && status === 'running') pip.classList.add('active');
       else if (i === step && status === 'error')   pip.classList.add('error');
@@ -743,11 +748,11 @@ function runCompletePage() {
   function loadSettings() {
     chrome.storage.local.get(['anaSettings', 'anaStatus', 'anaStep'], function(r) {
       var s = r.anaSettings || {};
-      document.getElementById('abk-origin').value = s.origin || '';
-      document.getElementById('abk-dest').value = s.destination || '';
-      document.getElementById('abk-date').value = s.departureDate || '';
-      document.getElementById('abk-phone').value = s.phone || '';
-      document.getElementById('abk-arranger').checked = s.travelArranger || false;
+      q('#origin').value  = s.origin || '';
+      q('#dest').value    = s.destination || '';
+      q('#date').value    = s.departureDate || '';
+      q('#phone').value   = s.phone || '';
+      q('#arranger').checked = s.travelArranger || false;
       selectFlight(s.selectedFlightIndex || 0);
       updateStatus(r.anaStatus || 'idle', r.anaStep || 0);
     });
@@ -761,7 +766,6 @@ function runCompletePage() {
         alert('Please fill in all fields before starting.');
         return;
       }
-      // Date formatting
       var d = new Date(s.departureDate);
       var month = String(d.getMonth() + 1).padStart(2, '0');
       var day   = String(d.getDate()).padStart(2, '0');
@@ -788,7 +792,6 @@ function runCompletePage() {
       };
       chrome.storage.local.set({ anaStep: 0, anaStatus: 'running', anaConfig: config }, function() {
         updateStatus('running', 0);
-        // Reload so the booking IIFE picks up anaStatus:'running' fresh
         window.location.reload();
       });
     });
@@ -797,35 +800,30 @@ function runCompletePage() {
   function resetBooking() {
     chrome.storage.local.set({ anaStep: 0, anaStatus: 'idle', anaConfig: null, anaError: null });
     updateStatus('idle', 0);
-    document.getElementById('abk-btn-start').disabled = false;
   }
 
-  // ── Event wiring ─────────────────────────────────────────────────────────────
-  document.getElementById('abk-header').addEventListener('click', function(e) {
-    if (e.target.id === 'abk-min-btn') return; // handled below
-    panel.classList.toggle('abk-minimized');
+  // ── Event wiring ──────────────────────────────────────────────────────────
+  var panel = q('#panel');
+  q('#header').addEventListener('click', function(e) {
+    if (e.target.id === 'min-btn') return;
+    panel.classList.toggle('minimized');
   });
-  document.getElementById('abk-min-btn').addEventListener('click', function() {
-    panel.classList.toggle('abk-minimized');
-  });
-  panel.querySelectorAll('.abk-fopt').forEach(function(el) {
+  q('#min-btn').addEventListener('click', function() { panel.classList.toggle('minimized'); });
+
+  qa('.fopt').forEach(function(el) {
     el.addEventListener('click', function() { selectFlight(parseInt(el.dataset.index)); saveSettings(); });
   });
-  document.getElementById('abk-cbrow').addEventListener('click', function(e) {
-    if (e.target.type !== 'checkbox') {
-      var cb = document.getElementById('abk-arranger');
-      cb.checked = !cb.checked;
-    }
+  q('#cbrow').addEventListener('click', function(e) {
+    if (e.target.type !== 'checkbox') { q('#arranger').checked = !q('#arranger').checked; }
     saveSettings();
   });
-  ['abk-origin','abk-dest','abk-date','abk-phone'].forEach(function(id) {
-    var el = document.getElementById(id);
+  ['#origin','#dest','#date','#phone'].forEach(function(sel) {
+    var el = q(sel);
     if (el) { el.addEventListener('input', saveSettings); el.addEventListener('change', saveSettings); }
   });
-  document.getElementById('abk-btn-start').addEventListener('click', startBooking);
-  document.getElementById('abk-btn-reset').addEventListener('click', resetBooking);
+  q('#btn-start').addEventListener('click', startBooking);
+  q('#btn-reset').addEventListener('click', resetBooking);
 
-  // Live status updates from booking IIFE
   chrome.storage.onChanged.addListener(function(changes) {
     if (changes.anaStatus || changes.anaStep) {
       chrome.storage.local.get(['anaStatus', 'anaStep'], function(r) {
