@@ -571,44 +571,80 @@ function runCompletePage() {
 (function() {
   if (document.getElementById('ana-booker-panel')) return;
 
+  // Load the same fonts as the popup
+  var fontLink = document.createElement('link');
+  fontLink.rel = 'stylesheet';
+  fontLink.href = 'https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap';
+  document.head.appendChild(fontLink);
+
   var style = document.createElement('style');
   style.textContent = [
-    '#ana-booker-panel{position:fixed;bottom:24px;right:24px;width:290px;background:#0a0a0f;border:1px solid #1e2a4a;border-radius:12px;font-family:sans-serif;font-size:13px;color:#e8e8f0;z-index:2147483647;box-shadow:0 8px 32px rgba(0,0,0,.6);overflow:hidden}',
+    // Panel shell
+    '#ana-booker-panel{position:fixed;bottom:24px;right:24px;width:320px;background:#0a0a0f;border:1px solid #1e2a4a;border-radius:12px;font-family:"DM Sans",sans-serif;font-size:13px;color:#e8e8f0;z-index:2147483647;box-shadow:0 8px 32px rgba(0,0,0,.7);overflow:hidden}',
     '#ana-booker-panel *{box-sizing:border-box;margin:0;padding:0}',
     '#ana-booker-panel.abk-minimized #abk-body{display:none}',
-    '#abk-header{background:linear-gradient(135deg,#0d1b3e,#0a0a0f);padding:11px 14px;border-bottom:1px solid #1e2a4a;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}',
-    '#abk-header-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#fff}',
-    '#abk-icon{width:24px;height:24px;background:linear-gradient(135deg,#1a6fb5,#0d4a8a);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}',
-    '#abk-min-btn{background:transparent;border:none;color:#4a5a7a;font-size:18px;cursor:pointer;line-height:1;padding:0 2px}',
+    // Header — matches .header
+    '#abk-header{background:linear-gradient(135deg,#0d1b3e 0%,#0a0a0f 100%);padding:16px 18px 14px;border-bottom:1px solid #1e2a4a;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}',
+    '#abk-header-left{display:flex;align-items:center;gap:10px}',
+    '#abk-icon{width:32px;height:32px;background:linear-gradient(135deg,#1a6fb5,#0d4a8a);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}',
+    '#abk-title{font-size:14px;font-weight:600;color:#fff;letter-spacing:0.3px}',
+    '#abk-subtitle{font-size:10px;color:#5a6a8a;font-family:"DM Mono",monospace;margin-top:1px}',
+    '#abk-min-btn{background:transparent;border:none;color:#4a5a7a;font-size:20px;line-height:1;cursor:pointer;padding:0 2px;flex-shrink:0}',
     '#abk-min-btn:hover{color:#e8e8f0}',
-    '#abk-body{padding:12px 14px;display:flex;flex-direction:column;gap:8px}',
-    '#abk-status-bar{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0f1420;border:1px solid #1a2035;border-radius:6px}',
+    // Status bar — matches .status-bar
+    '#abk-status-bar{background:#0f1420;padding:8px 18px;border-bottom:1px solid #1a2035;display:flex;align-items:center;gap:8px}',
     '.abk-dot{width:6px;height:6px;border-radius:50%;background:#2a3550;flex-shrink:0;transition:all .3s}',
+    '.abk-dot.idle{background:#2a3550}',
     '.abk-dot.running{background:#22c55e;box-shadow:0 0 6px #22c55e;animation:abk-pulse 1.5s infinite}',
     '.abk-dot.error{background:#ef4444;box-shadow:0 0 6px #ef4444}',
     '.abk-dot.done{background:#3b82f6;box-shadow:0 0 6px #3b82f6}',
     '@keyframes abk-pulse{0%,100%{opacity:1}50%{opacity:.4}}',
-    '.abk-st{font-size:11px;font-family:monospace;color:#4a5a7a}',
+    '.abk-st{font-size:11px;font-family:"DM Mono",monospace;color:#4a5a7a}',
     '.abk-st.running{color:#22c55e}.abk-st.error{color:#ef4444}.abk-st.done{color:#3b82f6}',
-    '.abk-row{display:flex;gap:6px}',
-    '.abk-field{display:flex;flex-direction:column;gap:3px;flex:1}',
-    '.abk-lbl{font-size:10px;font-weight:500;color:#4a5a7a;text-transform:uppercase;letter-spacing:.8px;font-family:monospace}',
-    '.abk-inp{background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:6px 8px;color:#e8e8f0;font-family:monospace;font-size:12px;outline:none;width:100%;transition:border-color .2s}',
-    '.abk-inp:focus{border-color:#1a6fb5}.abk-inp::placeholder{color:#2a3550}',
-    '.abk-flights{display:flex;gap:4px}',
-    '.abk-fopt{flex:1;background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:5px 4px;cursor:pointer;text-align:center;transition:all .2s;font-family:monospace;font-size:10px;font-weight:500;color:#e8e8f0}',
-    '.abk-fopt:hover{border-color:#1a6fb5}.abk-fopt.selected{border-color:#1a6fb5;background:rgba(26,111,181,.1);color:#60a5fa}',
-    '.abk-div{height:1px;background:#1a2035}',
-    '.abk-cbrow{display:flex;align-items:center;gap:8px;background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:7px 8px;cursor:pointer;transition:border-color .2s}',
-    '.abk-cbrow:hover{border-color:#1a6fb5}.abk-cbrow span{font-size:11px;color:#8a9ab8;line-height:1.3}',
+    // Form body — matches .form
+    '#abk-body{padding:14px 18px;display:flex;flex-direction:column;gap:10px}',
+    '.abk-row{display:flex;gap:8px}',
+    '.abk-field{display:flex;flex-direction:column;gap:4px;flex:1}',
+    '.abk-lbl{font-size:10px;font-weight:500;color:#4a5a7a;text-transform:uppercase;letter-spacing:0.8px;font-family:"DM Mono",monospace}',
+    // Inputs — matches input[type="text"], input[type="date"]
+    '.abk-inp{background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:7px 10px;color:#e8e8f0;font-family:"DM Mono",monospace;font-size:12px;outline:none;width:100%;transition:border-color .2s,box-shadow .2s}',
+    '.abk-inp:focus{border-color:#1a6fb5;box-shadow:0 0 0 2px rgba(26,111,181,.15)}',
+    '.abk-inp::placeholder{color:#2a3550}',
+    '.abk-inp[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.3);cursor:pointer}',
+    // Flight selector — matches .flight-selector / .flight-option
+    '.abk-flights{display:flex;gap:6px}',
+    '.abk-fopt{flex:1;background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:7px 8px;cursor:pointer;text-align:center;transition:all .2s}',
+    '.abk-fopt:hover{border-color:#1a6fb5}',
+    '.abk-fopt.selected{border-color:#1a6fb5;background:rgba(26,111,181,.1)}',
+    '.abk-fopt-code{font-family:"DM Mono",monospace;font-size:11px;font-weight:500;color:#e8e8f0}',
+    '.abk-fopt-sub{font-size:9px;color:#4a5a7a;margin-top:2px;font-family:"DM Mono",monospace}',
+    '.abk-fopt.selected .abk-fopt-code{color:#60a5fa}',
+    '.abk-fopt.selected .abk-fopt-sub{color:#3b82f6}',
+    // Divider
+    '.abk-div{height:1px;background:#1a2035;margin:2px 0}',
+    // Checkbox row — matches .checkbox-row
+    '.abk-cbrow{display:flex;align-items:center;gap:10px;background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:8px 10px;cursor:pointer;transition:border-color .2s}',
+    '.abk-cbrow:hover{border-color:#1a6fb5}',
+    '.abk-cbrow input[type="checkbox"]{width:14px;height:14px;accent-color:#1a6fb5;cursor:pointer;flex-shrink:0}',
+    '.abk-cbrow span{font-size:11px;color:#8a9ab8;line-height:1.3}',
+    // Progress pips — matches .step-progress
+    '#abk-progress{padding:0 18px 14px}',
+    '.abk-pip-label{font-size:10px;font-family:"DM Mono",monospace;color:#4a5a7a;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.8px}',
     '.abk-pips{display:flex;gap:3px}',
     '.abk-pip{flex:1;height:3px;background:#1a2035;border-radius:2px;transition:all .3s}',
-    '.abk-pip.done{background:#22c55e}.abk-pip.active{background:#1a6fb5;animation:abk-pulse 1.5s infinite}.abk-pip.error{background:#ef4444}',
-    '.abk-btn-start{background:linear-gradient(135deg,#1a6fb5,#0d4a8a);border:none;border-radius:8px;padding:9px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:all .2s}',
-    '.abk-btn-start:hover{background:linear-gradient(135deg,#2080cc,#1a5aa0);transform:translateY(-1px)}.abk-btn-start:active{transform:none}.abk-btn-start:disabled{opacity:.4;cursor:not-allowed;transform:none}',
-    '.abk-btn-reset{background:transparent;border:1px solid #1e2a4a;border-radius:8px;padding:6px;color:#4a5a7a;font-size:11px;cursor:pointer;width:100%;transition:all .2s}',
+    '.abk-pip.done{background:#22c55e}',
+    '.abk-pip.active{background:#1a6fb5;animation:abk-pulse 1.5s infinite}',
+    '.abk-pip.error{background:#ef4444}',
+    // Actions — matches .actions
+    '#abk-actions{padding:0 18px 14px;display:flex;flex-direction:column;gap:6px}',
+    '.abk-btn-start{background:linear-gradient(135deg,#1a6fb5,#0d4a8a);border:none;border-radius:8px;padding:10px;color:#fff;font-family:"DM Sans",sans-serif;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:0.3px;transition:all .2s;width:100%}',
+    '.abk-btn-start:hover{background:linear-gradient(135deg,#2080cc,#1a5aa0);transform:translateY(-1px);box-shadow:0 4px 12px rgba(26,111,181,.3)}',
+    '.abk-btn-start:active{transform:translateY(0)}',
+    '.abk-btn-start:disabled{opacity:.4;cursor:not-allowed;transform:none}',
+    '.abk-btn-reset{background:transparent;border:1px solid #1e2a4a;border-radius:8px;padding:7px;color:#4a5a7a;font-family:"DM Sans",sans-serif;font-size:11px;cursor:pointer;transition:all .2s;width:100%}',
     '.abk-btn-reset:hover{border-color:#ef4444;color:#ef4444}',
-    '.abk-wm{font-size:9px;font-family:monospace;color:#2a3550;text-align:center}'
+    // Watermark
+    '.abk-wm{font-size:9px;font-family:"DM Mono",monospace;color:#2a3550;text-align:center;padding-bottom:10px}'
   ].join('');
   document.head.appendChild(style);
 
@@ -616,11 +652,14 @@ function runCompletePage() {
   panel.id = 'ana-booker-panel';
   panel.innerHTML =
     '<div id="abk-header">' +
-      '<div id="abk-header-title"><div id="abk-icon">✈</div><span>ANA Award Booker</span></div>' +
+      '<div id="abk-header-left">' +
+        '<div id="abk-icon">✈</div>' +
+        '<div><div id="abk-title">ANA Award Booker</div><div id="abk-subtitle">WAITLIST AUTOMATION</div></div>' +
+      '</div>' +
       '<button id="abk-min-btn">−</button>' +
     '</div>' +
+    '<div id="abk-status-bar"><div class="abk-dot idle" id="abk-dot"></div><div class="abk-st idle" id="abk-st">Ready to run</div></div>' +
     '<div id="abk-body">' +
-      '<div id="abk-status-bar"><div class="abk-dot idle" id="abk-dot"></div><div class="abk-st idle" id="abk-st">Ready</div></div>' +
       '<div class="abk-row">' +
         '<div class="abk-field"><label class="abk-lbl">From</label><input class="abk-inp" id="abk-origin" placeholder="TYO" maxlength="3"></div>' +
         '<div class="abk-field"><label class="abk-lbl">To</label><input class="abk-inp" id="abk-dest" placeholder="SFO" maxlength="3"></div>' +
@@ -628,21 +667,26 @@ function runCompletePage() {
       '</div>' +
       '<div class="abk-field"><label class="abk-lbl">Flight Preference</label>' +
         '<div class="abk-flights">' +
-          '<div class="abk-fopt selected" data-index="0">1st</div>' +
-          '<div class="abk-fopt" data-index="1">2nd</div>' +
-          '<div class="abk-fopt" data-index="2">3rd</div>' +
+          '<div class="abk-fopt selected" data-index="0"><div class="abk-fopt-code">1st Flight</div><div class="abk-fopt-sub">First available</div></div>' +
+          '<div class="abk-fopt" data-index="1"><div class="abk-fopt-code">2nd Flight</div><div class="abk-fopt-sub">Second available</div></div>' +
+          '<div class="abk-fopt" data-index="2"><div class="abk-fopt-code">3rd Flight</div><div class="abk-fopt-sub">Third available</div></div>' +
         '</div>' +
       '</div>' +
       '<div class="abk-div"></div>' +
-      '<div class="abk-field"><label class="abk-lbl">Phone</label><input class="abk-inp" id="abk-phone" placeholder="6501234567"></div>' +
-      '<div class="abk-cbrow" id="abk-cbrow"><input type="checkbox" id="abk-arranger" style="width:14px;height:14px;accent-color:#1a6fb5;cursor:pointer;flex-shrink:0"><span>Travel Arranger</span></div>' +
-      '<div class="abk-pips" id="abk-pips">' +
+      '<div class="abk-field"><label class="abk-lbl">Phone Number</label><input class="abk-inp" id="abk-phone" placeholder="Ex. 6501234567"></div>' +
+      '<div class="abk-cbrow" id="abk-cbrow"><input type="checkbox" id="abk-arranger"><span>I am booking for someone else (Travel Arranger)</span></div>' +
+    '</div>' +
+    '<div id="abk-progress">' +
+      '<div class="abk-pip-label">Progress</div>' +
+      '<div class="abk-pips">' +
         [0,1,2,3,4,5,6,7].map(function(i){ return '<div class="abk-pip" id="abk-pip'+i+'"></div>'; }).join('') +
       '</div>' +
+    '</div>' +
+    '<div id="abk-actions">' +
       '<button class="abk-btn-start" id="abk-btn-start">▶ Start Booking</button>' +
       '<button class="abk-btn-reset" id="abk-btn-reset">✕ Reset</button>' +
-      '<div class="abk-wm">里程研究所 AwardLab</div>' +
-    '</div>';
+    '</div>' +
+    '<div class="abk-wm">里程研究所 AwardLab</div>';
   document.body.appendChild(panel);
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
