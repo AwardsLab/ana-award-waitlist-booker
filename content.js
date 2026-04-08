@@ -564,3 +564,231 @@ function runCompletePage() {
 }
 
 })(); // end execution guard IIFE
+
+// ─── Floating Panel ───────────────────────────────────────────────────────────
+// Injected into every ANA page so the user can fill in settings and start
+// the booking without having to open the popup separately.
+(function() {
+  if (document.getElementById('ana-booker-panel')) return;
+
+  var style = document.createElement('style');
+  style.textContent = [
+    '#ana-booker-panel{position:fixed;bottom:24px;right:24px;width:290px;background:#0a0a0f;border:1px solid #1e2a4a;border-radius:12px;font-family:sans-serif;font-size:13px;color:#e8e8f0;z-index:2147483647;box-shadow:0 8px 32px rgba(0,0,0,.6);overflow:hidden}',
+    '#ana-booker-panel *{box-sizing:border-box;margin:0;padding:0}',
+    '#ana-booker-panel.abk-minimized #abk-body{display:none}',
+    '#abk-header{background:linear-gradient(135deg,#0d1b3e,#0a0a0f);padding:11px 14px;border-bottom:1px solid #1e2a4a;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}',
+    '#abk-header-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#fff}',
+    '#abk-icon{width:24px;height:24px;background:linear-gradient(135deg,#1a6fb5,#0d4a8a);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}',
+    '#abk-min-btn{background:transparent;border:none;color:#4a5a7a;font-size:18px;cursor:pointer;line-height:1;padding:0 2px}',
+    '#abk-min-btn:hover{color:#e8e8f0}',
+    '#abk-body{padding:12px 14px;display:flex;flex-direction:column;gap:8px}',
+    '#abk-status-bar{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0f1420;border:1px solid #1a2035;border-radius:6px}',
+    '.abk-dot{width:6px;height:6px;border-radius:50%;background:#2a3550;flex-shrink:0;transition:all .3s}',
+    '.abk-dot.running{background:#22c55e;box-shadow:0 0 6px #22c55e;animation:abk-pulse 1.5s infinite}',
+    '.abk-dot.error{background:#ef4444;box-shadow:0 0 6px #ef4444}',
+    '.abk-dot.done{background:#3b82f6;box-shadow:0 0 6px #3b82f6}',
+    '@keyframes abk-pulse{0%,100%{opacity:1}50%{opacity:.4}}',
+    '.abk-st{font-size:11px;font-family:monospace;color:#4a5a7a}',
+    '.abk-st.running{color:#22c55e}.abk-st.error{color:#ef4444}.abk-st.done{color:#3b82f6}',
+    '.abk-row{display:flex;gap:6px}',
+    '.abk-field{display:flex;flex-direction:column;gap:3px;flex:1}',
+    '.abk-lbl{font-size:10px;font-weight:500;color:#4a5a7a;text-transform:uppercase;letter-spacing:.8px;font-family:monospace}',
+    '.abk-inp{background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:6px 8px;color:#e8e8f0;font-family:monospace;font-size:12px;outline:none;width:100%;transition:border-color .2s}',
+    '.abk-inp:focus{border-color:#1a6fb5}.abk-inp::placeholder{color:#2a3550}',
+    '.abk-flights{display:flex;gap:4px}',
+    '.abk-fopt{flex:1;background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:5px 4px;cursor:pointer;text-align:center;transition:all .2s;font-family:monospace;font-size:10px;font-weight:500;color:#e8e8f0}',
+    '.abk-fopt:hover{border-color:#1a6fb5}.abk-fopt.selected{border-color:#1a6fb5;background:rgba(26,111,181,.1);color:#60a5fa}',
+    '.abk-div{height:1px;background:#1a2035}',
+    '.abk-cbrow{display:flex;align-items:center;gap:8px;background:#0f1420;border:1px solid #1e2a4a;border-radius:6px;padding:7px 8px;cursor:pointer;transition:border-color .2s}',
+    '.abk-cbrow:hover{border-color:#1a6fb5}.abk-cbrow span{font-size:11px;color:#8a9ab8;line-height:1.3}',
+    '.abk-pips{display:flex;gap:3px}',
+    '.abk-pip{flex:1;height:3px;background:#1a2035;border-radius:2px;transition:all .3s}',
+    '.abk-pip.done{background:#22c55e}.abk-pip.active{background:#1a6fb5;animation:abk-pulse 1.5s infinite}.abk-pip.error{background:#ef4444}',
+    '.abk-btn-start{background:linear-gradient(135deg,#1a6fb5,#0d4a8a);border:none;border-radius:8px;padding:9px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:all .2s}',
+    '.abk-btn-start:hover{background:linear-gradient(135deg,#2080cc,#1a5aa0);transform:translateY(-1px)}.abk-btn-start:active{transform:none}.abk-btn-start:disabled{opacity:.4;cursor:not-allowed;transform:none}',
+    '.abk-btn-reset{background:transparent;border:1px solid #1e2a4a;border-radius:8px;padding:6px;color:#4a5a7a;font-size:11px;cursor:pointer;width:100%;transition:all .2s}',
+    '.abk-btn-reset:hover{border-color:#ef4444;color:#ef4444}',
+    '.abk-wm{font-size:9px;font-family:monospace;color:#2a3550;text-align:center}'
+  ].join('');
+  document.head.appendChild(style);
+
+  var panel = document.createElement('div');
+  panel.id = 'ana-booker-panel';
+  panel.innerHTML =
+    '<div id="abk-header">' +
+      '<div id="abk-header-title"><div id="abk-icon">✈</div><span>ANA Award Booker</span></div>' +
+      '<button id="abk-min-btn">−</button>' +
+    '</div>' +
+    '<div id="abk-body">' +
+      '<div id="abk-status-bar"><div class="abk-dot idle" id="abk-dot"></div><div class="abk-st idle" id="abk-st">Ready</div></div>' +
+      '<div class="abk-row">' +
+        '<div class="abk-field"><label class="abk-lbl">From</label><input class="abk-inp" id="abk-origin" placeholder="TYO" maxlength="3"></div>' +
+        '<div class="abk-field"><label class="abk-lbl">To</label><input class="abk-inp" id="abk-dest" placeholder="SFO" maxlength="3"></div>' +
+        '<div class="abk-field"><label class="abk-lbl">Date</label><input class="abk-inp" type="date" id="abk-date"></div>' +
+      '</div>' +
+      '<div class="abk-field"><label class="abk-lbl">Flight Preference</label>' +
+        '<div class="abk-flights">' +
+          '<div class="abk-fopt selected" data-index="0">1st</div>' +
+          '<div class="abk-fopt" data-index="1">2nd</div>' +
+          '<div class="abk-fopt" data-index="2">3rd</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="abk-div"></div>' +
+      '<div class="abk-field"><label class="abk-lbl">Phone</label><input class="abk-inp" id="abk-phone" placeholder="6501234567"></div>' +
+      '<div class="abk-cbrow" id="abk-cbrow"><input type="checkbox" id="abk-arranger" style="width:14px;height:14px;accent-color:#1a6fb5;cursor:pointer;flex-shrink:0"><span>Travel Arranger</span></div>' +
+      '<div class="abk-pips" id="abk-pips">' +
+        [0,1,2,3,4,5,6,7].map(function(i){ return '<div class="abk-pip" id="abk-pip'+i+'"></div>'; }).join('') +
+      '</div>' +
+      '<button class="abk-btn-start" id="abk-btn-start">▶ Start Booking</button>' +
+      '<button class="abk-btn-reset" id="abk-btn-reset">✕ Reset</button>' +
+      '<div class="abk-wm">里程研究所 AwardLab</div>' +
+    '</div>';
+  document.body.appendChild(panel);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  function getSelectedIndex() {
+    var sel = panel.querySelector('.abk-fopt.selected');
+    return sel ? parseInt(sel.dataset.index) : 0;
+  }
+
+  function selectFlight(index) {
+    panel.querySelectorAll('.abk-fopt').forEach(function(el) {
+      el.classList.toggle('selected', parseInt(el.dataset.index) === index);
+    });
+  }
+
+  function saveSettings() {
+    chrome.storage.local.set({ anaSettings: {
+      origin: document.getElementById('abk-origin').value,
+      destination: document.getElementById('abk-dest').value,
+      departureDate: document.getElementById('abk-date').value,
+      phone: document.getElementById('abk-phone').value,
+      travelArranger: document.getElementById('abk-arranger').checked,
+      selectedFlightIndex: getSelectedIndex()
+    }});
+  }
+
+  var stepLabels = [
+    'Filling search form...', 'Selecting flight...', 'Confirming flight...',
+    'Next page...', 'Selecting passenger...', 'Entering phone...',
+    'Confirming booking...', 'Submitting waitlist...'
+  ];
+
+  function updateStatus(status, step) {
+    var dot = document.getElementById('abk-dot');
+    var txt = document.getElementById('abk-st');
+    var btn = document.getElementById('abk-btn-start');
+    if (!dot) return;
+    dot.className = 'abk-dot ' + status;
+    txt.className = 'abk-st ' + status;
+    btn.disabled = (status === 'running');
+    if (status === 'idle')         txt.textContent = 'Ready';
+    else if (status === 'running') txt.textContent = stepLabels[step] || 'Running...';
+    else if (status === 'done')    txt.textContent = '✓ Waitlist submitted!';
+    else if (status === 'error')   txt.textContent = '✕ Error — check console';
+    for (var i = 0; i < 8; i++) {
+      var pip = document.getElementById('abk-pip' + i);
+      if (!pip) continue;
+      pip.className = 'abk-pip';
+      if (i < step) pip.classList.add('done');
+      else if (i === step && status === 'running') pip.classList.add('active');
+      else if (i === step && status === 'error')   pip.classList.add('error');
+    }
+  }
+
+  function loadSettings() {
+    chrome.storage.local.get(['anaSettings', 'anaStatus', 'anaStep'], function(r) {
+      var s = r.anaSettings || {};
+      document.getElementById('abk-origin').value = s.origin || '';
+      document.getElementById('abk-dest').value = s.destination || '';
+      document.getElementById('abk-date').value = s.departureDate || '';
+      document.getElementById('abk-phone').value = s.phone || '';
+      document.getElementById('abk-arranger').checked = s.travelArranger || false;
+      selectFlight(s.selectedFlightIndex || 0);
+      updateStatus(r.anaStatus || 'idle', r.anaStep || 0);
+    });
+  }
+
+  function startBooking() {
+    saveSettings();
+    chrome.storage.local.get('anaSettings', function(r) {
+      var s = r.anaSettings || {};
+      if (!s.origin || !s.destination || !s.departureDate || !s.phone) {
+        alert('Please fill in all fields before starting.');
+        return;
+      }
+      // Date formatting
+      var d = new Date(s.departureDate);
+      var month = String(d.getMonth() + 1).padStart(2, '0');
+      var day   = String(d.getDate()).padStart(2, '0');
+      var year  = String(d.getFullYear());
+      var days  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      var hiddenDate  = year + month + day;
+      var displayDate = month + '/' + day + '/' + year.slice(2) + ' (' + days[d.getDay()] + ')';
+      var origin = s.origin.toUpperCase();
+      var dest   = s.destination.toUpperCase();
+      var names  = {
+        'TYO':'Tokyo (All)','NRT':'Tokyo (Narita)','HND':'Tokyo (Haneda)',
+        'OSA':'Osaka (All)','KIX':'Osaka (Kansai)','ITM':'Osaka (Itami)',
+        'SFO':'San Francisco','LAX':'Los Angeles','JFK':'New York (JFK)',
+        'EWR':'New York (Newark)','ORD':'Chicago','SEA':'Seattle',
+        'LHR':'London (Heathrow)','CDG':'Paris','SYD':'Sydney',
+        'SIN':'Singapore','BKK':'Bangkok','HKG':'Hong Kong'
+      };
+      var config = {
+        origin: origin, originDisplay: names[origin] || origin,
+        destination: dest, destinationDisplay: names[dest] || dest,
+        hiddenDate: hiddenDate, displayDate: displayDate,
+        phone: s.phone, travelArranger: s.travelArranger || false,
+        selectedFlightIndex: s.selectedFlightIndex || 0
+      };
+      chrome.storage.local.set({ anaStep: 0, anaStatus: 'running', anaConfig: config }, function() {
+        updateStatus('running', 0);
+        // Reload so the booking IIFE picks up anaStatus:'running' fresh
+        window.location.reload();
+      });
+    });
+  }
+
+  function resetBooking() {
+    chrome.storage.local.set({ anaStep: 0, anaStatus: 'idle', anaConfig: null, anaError: null });
+    updateStatus('idle', 0);
+    document.getElementById('abk-btn-start').disabled = false;
+  }
+
+  // ── Event wiring ─────────────────────────────────────────────────────────────
+  document.getElementById('abk-header').addEventListener('click', function(e) {
+    if (e.target.id === 'abk-min-btn') return; // handled below
+    panel.classList.toggle('abk-minimized');
+  });
+  document.getElementById('abk-min-btn').addEventListener('click', function() {
+    panel.classList.toggle('abk-minimized');
+  });
+  panel.querySelectorAll('.abk-fopt').forEach(function(el) {
+    el.addEventListener('click', function() { selectFlight(parseInt(el.dataset.index)); saveSettings(); });
+  });
+  document.getElementById('abk-cbrow').addEventListener('click', function(e) {
+    if (e.target.type !== 'checkbox') {
+      var cb = document.getElementById('abk-arranger');
+      cb.checked = !cb.checked;
+    }
+    saveSettings();
+  });
+  ['abk-origin','abk-dest','abk-date','abk-phone'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('input', saveSettings); el.addEventListener('change', saveSettings); }
+  });
+  document.getElementById('abk-btn-start').addEventListener('click', startBooking);
+  document.getElementById('abk-btn-reset').addEventListener('click', resetBooking);
+
+  // Live status updates from booking IIFE
+  chrome.storage.onChanged.addListener(function(changes) {
+    if (changes.anaStatus || changes.anaStep) {
+      chrome.storage.local.get(['anaStatus', 'anaStep'], function(r) {
+        updateStatus(r.anaStatus || 'idle', r.anaStep || 0);
+      });
+    }
+  });
+
+  loadSettings();
+})(); // end floating panel
