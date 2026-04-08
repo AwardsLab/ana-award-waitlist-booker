@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "ANA Award Booker",
+  "version": "1.0",
+  "description": "Automates ANA flight award waitlist booking",
+  "permissions": ["storage", "scripting", "tabs", "activeTab"],
+  "host_permissions": [
+    "https://aswbe-i.ana.co.jp/*",
+    "https://www.ana.co.jp/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://aswbe-i.ana.co.jp/*",
+        "https://www.ana.co.jp/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

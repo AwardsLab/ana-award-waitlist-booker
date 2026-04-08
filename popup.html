@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANA Award Booker</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 320px;
+      background: #0a0a0f;
+      color: #e8e8f0;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #0d1b3e 0%, #0a0a0f 100%);
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid #1e2a4a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #1a6fb5, #0d4a8a);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .header-text h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: 0.3px;
+    }
+
+    .header-text p {
+      font-size: 10px;
+      color: #5a6a8a;
+      font-family: 'DM Mono', monospace;
+      margin-top: 1px;
+    }
+
+    .status-bar {
+      background: #0f1420;
+      padding: 8px 18px;
+      border-bottom: 1px solid #1a2035;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #2a3550;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+
+    .status-dot.idle { background: #2a3550; }
+    .status-dot.running { background: #22c55e; box-shadow: 0 0 6px #22c55e; animation: pulse 1.5s infinite; }
+    .status-dot.error { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+    .status-dot.done { background: #3b82f6; box-shadow: 0 0 6px #3b82f6; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .status-text {
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      color: #4a5a7a;
+    }
+
+    .status-text.running { color: #22c55e; }
+    .status-text.error { color: #ef4444; }
+    .status-text.done { color: #3b82f6; }
+
+    .form {
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    label {
+      font-size: 10px;
+      font-weight: 500;
+      color: #4a5a7a;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    input[type="text"],
+    input[type="date"] {
+      background: #0f1420;
+      border: 1px solid #1e2a4a;
+      border-radius: 6px;
+      padding: 7px 10px;
+      color: #e8e8f0;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus {
+      border-color: #1a6fb5;
+      box-shadow: 0 0 0 2px rgba(26, 111, 181, 0.15);
+    }
+
+    input[type="text"]::placeholder {
+      color: #2a3550;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.3);
+      cursor: pointer;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #0f1420;
+      border: 1px solid #1e2a4a;
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .checkbox-row:hover {
+      border-color: #1a6fb5;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #1a6fb5;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox-row span {
+      font-size: 11px;
+      color: #8a9ab8;
+      line-height: 1.3;
+    }
+
+    .divider {
+      height: 1px;
+      background: #1a2035;
+      margin: 2px 0;
+    }
+
+    .flight-selector {
+      display: flex;
+      gap: 6px;
+    }
+
+    .flight-option {
+      flex: 1;
+      background: #0f1420;
+      border: 1px solid #1e2a4a;
+      border-radius: 6px;
+      padding: 7px 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .flight-option:hover {
+      border-color: #1a6fb5;
+    }
+
+    .flight-option.selected {
+      border-color: #1a6fb5;
+      background: rgba(26, 111, 181, 0.1);
+    }
+
+    .flight-option .flight-code {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: #e8e8f0;
+    }
+
+    .flight-option .flight-airport {
+      font-size: 9px;
+      color: #4a5a7a;
+      margin-top: 2px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .flight-option.selected .flight-code { color: #60a5fa; }
+    .flight-option.selected .flight-airport { color: #3b82f6; }
+
+    .actions {
+      padding: 0 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #1a6fb5, #0d4a8a);
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-start:hover {
+      background: linear-gradient(135deg, #2080cc, #1a5aa0);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(26, 111, 181, 0.3);
+    }
+
+    .btn-start:active { transform: translateY(0); }
+    .btn-start:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-reset {
+      background: transparent;
+      border: 1px solid #1e2a4a;
+      border-radius: 8px;
+      padding: 7px;
+      color: #4a5a7a;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-reset:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .step-progress {
+      padding: 0 18px 14px;
+    }
+
+    .step-label {
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      color: #4a5a7a;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .steps {
+      display: flex;
+      gap: 3px;
+    }
+
+    .step-pip {
+      flex: 1;
+      height: 3px;
+      background: #1a2035;
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+
+    .step-pip.done { background: #22c55e; }
+    .step-pip.active { background: #1a6fb5; animation: pulse 1.5s infinite; }
+    .step-pip.error { background: #ef4444; }
+
+    .saved-badge {
+      font-size: 9px;
+      font-family: 'DM Mono', monospace;
+      color: #22c55e;
+      opacity: 0;
+      transition: opacity 0.3s;
+      text-align: right;
+    }
+    .saved-badge.show { opacity: 1; }
+
+    .gate-screen {
+      padding: 20px 18px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      text-align: center;
+    }
+
+    .gate-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .gate-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e8e8f0;
+    }
+
+    .gate-subtitle {
+      font-size: 11px;
+      color: #4a5a7a;
+      font-family: 'DM Mono', monospace;
+      line-height: 1.5;
+    }
+
+    .btn-goto {
+      background: linear-gradient(135deg, #1a6fb5, #0d4a8a);
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .btn-goto:hover {
+      background: linear-gradient(135deg, #2080cc, #1a5aa0);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(26, 111, 181, 0.3);
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">✈</div>
+  <div class="header-text">
+    <h1>ANA Award Booker</h1>
+    <p>WAITLIST AUTOMATION</p>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-dot idle" id="statusDot"></div>
+  <div class="status-text idle" id="statusText">Ready to run</div>
+</div>
+
+<div class="gate-screen hidden" id="gateScreen">
+  <div class="gate-icon">🔐</div>
+  <div class="gate-title">Log in to ANA first</div>
+  <div class="gate-subtitle">You need to be on the ANA award<br>booking page to use this tool.</div>
+  <button class="btn-goto" id="btnGoto">Go to ANA Award Search</button>
+</div>
+
+<div class="form" id="mainForm">
+  <div class="row">
+    <div class="field">
+      <label>From</label>
+      <input type="text" id="origin" placeholder="TYO" maxlength="3">
+    </div>
+    <div class="field">
+      <label>To</label>
+      <input type="text" id="destination" placeholder="SFO" maxlength="3">
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="departureDate">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Flight Preference</label>
+    <div class="flight-selector">
+      <div class="flight-option selected" id="flightFirst" data-index="0">
+        <div class="flight-code">1st Flight</div>
+        <div class="flight-airport">First available</div>
+      </div>
+      <div class="flight-option" id="flightSecond" data-index="1">
+        <div class="flight-code">2nd Flight</div>
+        <div class="flight-airport">Second available</div>
+      </div>
+      <div class="flight-option" id="flightThird" data-index="2">
+        <div class="flight-code">3rd Flight</div>
+        <div class="flight-airport">Third available</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="field">
+    <label>Phone Number</label>
+    <input type="text" id="phone" placeholder="Ex. 6501234567">
+  </div>
+
+  <div class="checkbox-row" id="travelArrangerRow">
+    <input type="checkbox" id="travelArranger">
+    <span>I am booking for someone else (Travel Arranger)</span>
+  </div>
+
+  <div class="saved-badge" id="savedBadge">✓ Settings saved</div>
+</div>
+
+<div class="step-progress hidden" id="stepProgress">
+  <div class="step-label">Progress</div>
+  <div class="steps" id="stepPips">
+    <div class="step-pip" id="pip0"></div>
+    <div class="step-pip" id="pip1"></div>
+    <div class="step-pip" id="pip2"></div>
+    <div class="step-pip" id="pip3"></div>
+    <div class="step-pip" id="pip4"></div>
+    <div class="step-pip" id="pip5"></div>
+    <div class="step-pip" id="pip6"></div>
+    <div class="step-pip" id="pip7"></div>
+  </div>
+</div>
+
+<div class="actions hidden" id="actionsBar">
+  <button class="btn-start" id="btnStart">▶ Start Booking</button>
+  <button class="btn-reset" id="btnReset">✕ Reset</button>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
