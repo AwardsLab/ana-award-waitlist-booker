@@ -233,11 +233,31 @@ chrome.storage.local.get(['anaStatus', 'anaStep', 'anaConfig'], function(result)
   });
 });
 
-// ─── Step 0: ANA Landing Page → Click Award Reservation ──────────────────────
+// ─── Step 0: ANA Landing Page → Click Flight Awards tab → Click Award Reservation ─
 function runLandingPage(config) {
-  console.log('[ANA Booker] Step 0: Clicking Award Reservation...');
+  console.log('[ANA Booker] Step 0: Clicking Flight Awards tab...');
 
-  waitForElement('a[data-scclick-element="reserve-award_txt_flightAwardReservations"]')
+  waitForElement('li.be-wws-secondary-tab__item span')
+  .then(function() {
+    // Find the Flight Awards tab by its text content
+    var tabs = document.querySelectorAll('li.be-wws-secondary-tab__item');
+    var flightAwardsTab = null;
+    tabs.forEach(function(tab) {
+      if (tab.textContent.trim() === 'Flight Awards') {
+        flightAwardsTab = tab;
+      }
+    });
+    if (flightAwardsTab) {
+      flightAwardsTab.click();
+      console.log('[ANA Booker] ✅ Clicked Flight Awards tab');
+    } else {
+      console.warn('[ANA Booker] ⚠️ Flight Awards tab not found, continuing anyway');
+    }
+    return delay(800);
+  })
+  .then(function() {
+    return waitForElement('a[data-scclick-element="reserve-award_txt_flightAwardReservations"]');
+  })
   .then(function(link) {
     console.log('[ANA Booker] ✅ Found Award Reservation link');
     return setStep(1).then(function() {
