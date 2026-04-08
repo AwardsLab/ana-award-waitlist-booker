@@ -95,4 +95,8 @@ Any other valid IATA code can be entered — it just won't have a display name s
 - Settings (origin, destination, date, flight preference, travel arranger) are saved automatically between sessions. Phone number is cleared on reset.
 - The extension only activates on `aswbe-i.ana.co.jp` and `www.ana.co.jp`.
 - A duplicate-execution guard prevents double form submissions that would trigger ANA's CSRF error `E_G02F25_0005`.
-- Audio cues play on each step (progress beep) and on completion (success chord) or error.
+- Audio cues play on completion (success chord) and on error.
+
+---
+
+Built by [里程研究所 AwardLab](https://github.com/AwardsLab)
